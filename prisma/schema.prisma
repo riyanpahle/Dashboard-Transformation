@@ -1,0 +1,54 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id       String @id @default(uuid())
+  name     String
+  email    String @unique
+  role     String // "Kepala Divisi", "Manager", "Staff"
+  teamId   String?
+  team     Team?  @relation(fields: [teamId], references: [id])
+}
+
+model Team {
+  id           String        @id @default(uuid())
+  name         String        // "Tim A", "Tim B", "Tim C"
+  users        User[]
+  workPrograms WorkProgram[]
+}
+
+model WorkProgram {
+  id             String    @id @default(uuid())
+  no             String
+  kategori       String
+  programKerja   String
+  output         String
+  target         String
+  linkToRjpp     String
+  effortLevel    String    // "High", "Medium", "Low"
+  impactLevel    String    // "High", "Medium", "Low"
+  priority       String    // "High", "Medium", "Low"
+  whatHasBeenDone String
+  nextActivity   String
+  progress       Int       @default(0) // 0 - 100
+  teamId         String
+  team           Team      @relation(fields: [teamId], references: [id])
+  meetings       Meeting[]
+}
+
+model Meeting {
+  id              String      @id @default(uuid())
+  title           String
+  date            DateTime
+  description     String?
+  notifyKepalaDivisi Boolean  @default(false)
+  workProgramId   String
+  workProgram     WorkProgram @relation(fields: [workProgramId], references: [id])
+}
