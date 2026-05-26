@@ -4,7 +4,6 @@ import "./globals.css";
 import { UserProvider } from "@/components/UserProvider";
 import { AppLayout } from "@/components/AppLayout";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { PrismaClient } from "@prisma/client";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -16,18 +15,11 @@ export const metadata: Metadata = {
   description: "Dashboard Progress Divisi Transformasi Perusahaan",
 };
 
-const prisma = new PrismaClient();
-
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Fetch users for the mock login context
-  const users = await prisma.user.findMany({
-    include: { team: true },
-  });
-
   return (
     <html
       lang="en"
@@ -36,7 +28,7 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <UserProvider initialUsers={users}>
+          <UserProvider>
             <AppLayout>
               {children}
             </AppLayout>

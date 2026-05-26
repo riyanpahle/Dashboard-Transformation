@@ -1,106 +1,83 @@
 "use client";
 
-import { useUser } from "@/components/UserProvider";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { Lock } from "lucide-react";
-import { ThemeProvider, useTheme } from "next-themes";
+import { LayoutDashboard } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+import { useUser } from "@/components/UserProvider";
 
 export default function LoginPage() {
-  const { users, setCurrentUser, currentUser } = useUser();
   const router = useRouter();
-  const [selectedUserId, setSelectedUserId] = useState("");
-  const [password, setPassword] = useState("");
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const supabase = createClient();
+  const { currentUser } = useUser();
 
+  // If already logged in, redirect to dashboard
   useEffect(() => {
-    setMounted(true);
     if (currentUser) {
       router.push("/");
     }
   }, [currentUser, router]);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedUserId) return alert("Pilih akun terlebih dahulu.");
-    // In a real app we'd check password, but for this prototype we just log them in
-    if (password === "") return alert("Masukkan password (bebas untuk simulasi).");
-
-    const user = users.find(u => u.id === selectedUserId);
-    if (user) {
-      setCurrentUser(user);
-      router.push("/");
+  // Handle Google Sign in
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error logging in:", error);
+      setIsLoading(false);
     }
   };
 
-  if (!mounted) return null;
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 transition-colors duration-300 p-4">
-      <div className="absolute top-4 right-4">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+      {/* Background Decor */}
+      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 rounded-full bg-blue-500/20 blur-3xl" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 rounded-full bg-indigo-500/20 blur-3xl" />
+      
+      <div className="w-full max-w-md p-8 glass rounded-3xl z-10 mx-4 relative overflow-hidden shadow-2xl border border-white/50 dark:border-slate-800/50">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-blue-500/30 mb-6">
+            <LayoutDashboard className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
+            Dashboard DTP
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm">
+            Divisi Transformasi Perusahaan
+          </p>
+        </div>
+
         <button 
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+          onClick={handleGoogleLogin} 
+          disabled={isLoading}
+          className="w-full flex items-center justify-center space-x-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-200 py-3.5 px-4 rounded-xl font-medium transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
         >
-          {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
+          {isLoading ? (
+            <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <>
+              <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+              </svg>
+              <span>Sign in with Google</span>
+            </>
+          )}
         </button>
-      </div>
 
-      <div className="w-full max-w-md glass-panel p-8 rounded-3xl shadow-2xl animate-in fade-in zoom-in-95 duration-500">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30">
-            <Lock className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">DTP Portal</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-2 text-center">
-            Login untuk mengelola Program Kerja Divisi Transformasi Perusahaan
-          </p>
-        </div>
-
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Pilih Akun</label>
-            <select 
-              className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-200 transition-all"
-              value={selectedUserId}
-              onChange={(e) => setSelectedUserId(e.target.value)}
-              required
-            >
-              <option value="" disabled>-- Pilih Akun Anda --</option>
-              {users.map(u => (
-                <option key={u.id} value={u.id}>
-                  {u.name} ({u.team ? u.team.name : u.role})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
-            <input 
-              type="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="Masukkan password..."
-              className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-200 transition-all"
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3 rounded-xl shadow-lg shadow-blue-500/25 transition-all active:scale-95"
-          >
-            Masuk ke Dashboard
-          </button>
-        </form>
-
-        <div className="mt-8 text-center">
-          <p className="text-xs text-slate-400">
-            Hanya untuk penggunaan internal.<br/>(Untuk demo: bebas isi password apa saja)
-          </p>
-        </div>
+        <p className="mt-8 text-center text-xs text-slate-400 dark:text-slate-500">
+          Gunakan akun email Google Anda (gmail.com atau Workspace) untuk mengakses sistem secara aman.
+        </p>
       </div>
     </div>
   );

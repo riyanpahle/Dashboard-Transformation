@@ -1,43 +1,79 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { User, Team } from "@prisma/client";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
 
-type UserWithTeam = User & { team: Team | null };
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+};
 
-interface UserContextType {
-  currentUser: UserWithTeam | null;
-  setCurrentUser: (user: UserWithTeam | null) => void;
-  users: UserWithTeam[];
-}
+type UserContextType = {
+  currentUser: AuthUser | null;
+  setCurrentUser: (user: AuthUser | null) => void;
+  users: AuthUser[]; // not really used anymore, keeping for compatibility if needed
+  refreshSession: () => Promise<void>;
+  logout: () => Promise<void>;
+};
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export function UserProvider({ children, initialUsers }: { children: ReactNode, initialUsers: UserWithTeam[] }) {
-  const [currentUser, setCurrentUser] = useState<UserWithTeam | null>(null);
-  const [users] = useState<UserWithTeam[]>(initialUsers);
+export function UserProvider({ children }: { children: React.ReactNode }) {
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const supabase = createClient();
 
-  // Load from local storage
-  useEffect(() => {
-    const saved = localStorage.getItem("dtp_current_user");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      const user = initialUsers.find(u => u.id === parsed.id);
-      if (user) setCurrentUser(user);
-    }
-  }, [initialUsers]);
-
-  const handleSetUser = (user: UserWithTeam | null) => {
-    setCurrentUser(user);
-    if (user) {
-      localStorage.setItem("dtp_current_user", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("dtp_current_user");
+  const refreshSession = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setCurrentUser({
+          id: session.user.id,
+          name: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || "User",
+          email: session.user.email || "",
+        });
+      } else {
+        setCurrentUser(null);
+      }
+    } catch (error) {
+      console.error("Error refreshing session:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    refreshSession();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setCurrentUser({
+          id: session.user.id,
+          name: session.user.user_metadata.full_name || session.user.email?.split('@')[0] || "User",
+          email: session.user.email || "",
+        });
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setCurrentUser(null);
+  };
+
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+      <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>;
+  }
+
   return (
-    <UserContext.Provider value={{ currentUser, setCurrentUser: handleSetUser, users }}>
+    <UserContext.Provider value={{ currentUser, setCurrentUser, users: [], refreshSession, logout }}>
       {children}
     </UserContext.Provider>
   );
@@ -46,7 +82,7 @@ export function UserProvider({ children, initialUsers }: { children: ReactNode, 
 export function useUser() {
   const context = useContext(UserContext);
   if (context === undefined) {
-    throw new Error("useUser must be used within a UserProvider");
+    throw new Error('useUser must be used within a UserProvider');
   }
   return context;
 }

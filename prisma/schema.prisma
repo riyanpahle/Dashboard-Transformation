@@ -49,6 +49,18 @@ model Meeting {
   date            DateTime
   description     String?
   notifyKepalaDivisi Boolean  @default(false)
+  participantEmails  String?
   workProgramId   String
-  workProgram     WorkProgram @relation(fields: [workProgramId], references: [id])
+  workProgram     WorkProgram @relation(fields: [workProgramId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id              String      @id @default(uuid())
+  actorEmail      String
+  actorName       String?
+  action          String      // e.g. "CREATED", "UPDATED", "DELETED"
+  entityType      String      // e.g. "WorkProgram"
+  entityTitle     String
+  details         String?
+  createdAt       DateTime    @default(now())
 }

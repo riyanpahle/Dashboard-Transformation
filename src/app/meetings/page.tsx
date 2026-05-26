@@ -20,6 +20,7 @@ export default function MeetingsPage() {
   const [time, setTime] = useState("");
   const [programId, setProgramId] = useState("");
   const [notifyKadiv, setNotifyKadiv] = useState(false);
+  const [participantEmails, setParticipantEmails] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -42,6 +43,7 @@ export default function MeetingsPage() {
         date: dateTime.toISOString(),
         workProgramId: programId,
         notifyKepalaDivisi: notifyKadiv,
+        participantEmails,
         description: `Meeting untuk program kerja: ${programs.find(p => p.id === programId)?.programKerja}`
       })
     });
@@ -50,17 +52,7 @@ export default function MeetingsPage() {
       const newMeeting = await res.json();
       setMeetings([...meetings, newMeeting]);
       setShowForm(false);
-      setTitle(""); setDate(""); setTime(""); setProgramId(""); setNotifyKadiv(false);
-      
-      // Simulate Email Notification
-      const wp = programs.find(p => p.id === programId);
-      const teamUsers = users.filter(u => u.teamId === wp?.teamId);
-      if (notifyKadiv) {
-        const kadiv = users.find(u => u.role === "Kepala Divisi");
-        if (kadiv) teamUsers.push(kadiv);
-      }
-      const emails = teamUsers.map(u => u.email).join(", ");
-      alert(`Simulasi Notifikasi Email terkirim ke:\n${emails}\n\nTermasuk link Google Calendar!`);
+      setTitle(""); setDate(""); setTime(""); setProgramId(""); setNotifyKadiv(false); setParticipantEmails("");
     }
     setSubmitting(false);
   };
@@ -71,21 +63,26 @@ export default function MeetingsPage() {
     
     const formatGcalDate = (d: Date) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
     
-    // Ambil email partisipan
-    const teamUsers = users.filter(u => u.teamId === m.workProgram.teamId);
-    if (m.notifyKepalaDivisi) {
-      const kadiv = users.find(u => u.role === "Kepala Divisi");
-      if (kadiv) teamUsers.push(kadiv);
+    // Kumpulkan email peserta
+    const guests = [];
+    if (m.participantEmails) {
+      guests.push(...m.participantEmails.split(",").map(e => e.trim()).filter(e => e));
     }
-    const guestEmails = teamUsers.map(u => u.email).join(",");
+    if (m.notifyKepalaDivisi) {
+      guests.push("riyanpahlevi97@gmail.com"); // Email Kepala Divisi yang disepakati
+    }
 
     const params = new URLSearchParams({
       action: "TEMPLATE",
       text: m.title,
       dates: `${formatGcalDate(start)}/${formatGcalDate(end)}`,
       details: `${m.description}\n\nTerkait Program: ${m.workProgram.programKerja} (${m.workProgram.team.name})`,
-      add: guestEmails // Memasukkan semua email sebagai tamu (guests)
     });
+    
+    if (guests.length > 0) {
+      params.append("add", guests.join(","));
+    }
+
     return `https://calendar.google.com/calendar/render?${params.toString()}`;
   };
 
@@ -131,6 +128,10 @@ export default function MeetingsPage() {
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Waktu</label>
                 <input required type="time" value={time} onChange={e => setTime(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Email Peserta (Pisahkan dengan koma)</label>
+                <input type="text" value={participantEmails} onChange={e => setParticipantEmails(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Cth: anggota1@dtp.com, anggota2@dtp.com" />
+              </div>
             </div>
             
             <div className="flex items-center space-x-3 py-2">
@@ -142,7 +143,7 @@ export default function MeetingsPage() {
                 className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
               />
               <label htmlFor="notifyKadiv" className="text-sm text-slate-700 dark:text-slate-300">
-                Kirim Reminder Notifikasi ke Kepala Divisi
+                Kirim Undangan ke Kepala Divisi (riyanpahlevi97@gmail.com)
               </label>
             </div>
 

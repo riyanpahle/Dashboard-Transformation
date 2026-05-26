@@ -25,6 +25,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -132,10 +134,50 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </button>
             )}
 
-            <button className="p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => {
+                  setShowNotifications(!showNotifications);
+                  if (!showNotifications && notifications.length === 0) {
+                    fetch("/api/activity")
+                      .then(res => res.json())
+                      .then(setNotifications);
+                  }
+                }}
+                className="p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative focus:outline-none"
+              >
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+              </button>
+              
+              {showNotifications && (
+                <div className="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                  <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700 mb-2">
+                    <h3 className="font-semibold text-slate-800 dark:text-slate-200">Riwayat Aktivitas</h3>
+                  </div>
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-sm text-slate-500">Memuat riwayat...</div>
+                  ) : (
+                    notifications.map((log: any) => (
+                      <div key={log.id} className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors border-b border-slate-50 dark:border-slate-700/50 last:border-0">
+                        <div className="flex items-start">
+                          <div className={`w-2 h-2 mt-1.5 rounded-full mr-3 shrink-0 ${log.action === "MENGHAPUS" ? "bg-red-500" : log.action === "MEMBUAT" ? "bg-green-500" : "bg-blue-500"}`} />
+                          <div>
+                            <p className="text-sm text-slate-700 dark:text-slate-300">
+                              <span className="font-semibold">{log.actorName}</span> {log.action.toLowerCase()} <span className="font-medium text-slate-900 dark:text-white">{log.entityTitle}</span>
+                            </p>
+                            <p className="text-xs text-slate-500 mt-0.5">{log.details}</p>
+                            <p className="text-[10px] text-slate-400 mt-1">
+                              {new Date(log.createdAt).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
             
             <div className="relative">
               <button 
