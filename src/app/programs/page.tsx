@@ -120,7 +120,7 @@ export default function ProgramsPage() {
         no: "", kategori: "", programKerja: "", output: "", target: "", 
         linkToRjpp: "", effortLevel: "Medium", impactLevel: "Medium", 
         priority: "Medium", whatHasBeenDone: "", nextActivity: "", 
-        teamId: currentUser?.teamId || (teams[0]?.id || ""),
+        teamId: teams[0]?.id || "",
       });
     }
     setShowModal(true);
@@ -132,14 +132,11 @@ export default function ProgramsPage() {
   };
 
   const canEdit = (wp: WPWithTeam) => {
-    if (!currentUser) return false;
-    if (currentUser.role === "Kepala Divisi") return true;
-    if (currentUser.teamId === wp.teamId) return true;
-    return false;
+    return !!currentUser;
   };
 
   const canCreate = () => {
-    return currentUser?.role === "Kepala Divisi" || currentUser?.teamId != null;
+    return !!currentUser;
   };
 
   if (loading) return <div className="text-center py-20 animate-pulse text-slate-500">Memuat Data...</div>;

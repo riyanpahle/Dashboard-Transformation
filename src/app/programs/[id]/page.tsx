@@ -46,8 +46,7 @@ export default function ProgramDetailPage() {
   }, [params.id, router]);
 
   const canEdit = () => {
-    if (!currentUser || !program) return false;
-    return currentUser.role === "Kepala Divisi" || currentUser.teamId === program.teamId;
+    return !!currentUser;
   };
 
   const saveUpdates = async (field: "done" | "next") => {
