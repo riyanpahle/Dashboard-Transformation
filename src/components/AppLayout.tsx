@@ -61,9 +61,22 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen bg-slate-50 dark:bg-slate-900 overflow-hidden">
       {/* Sidebar */}
       <aside className={`${isSidebarOpen ? 'w-64' : 'w-0 opacity-0 md:opacity-100 md:w-20'} bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 z-20 whitespace-nowrap overflow-hidden shrink-0`}>
-        <div className="h-16 flex items-center px-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
-          <img src="/logo.png" alt="Askrindo IFG" className="h-10 w-auto mr-3 object-contain shrink-0 bg-white p-1 rounded" />
-          <span className={`font-bold text-sm leading-tight tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`h-16 flex items-center border-b border-slate-200 dark:border-slate-800 shrink-0 relative transition-all duration-300 ${isSidebarOpen ? 'px-4' : 'justify-center w-full'}`}>
+          <div className="relative flex items-center justify-center shrink-0">
+            {/* Logo Kecil */}
+            <img 
+              src="/logo-small.png" 
+              alt="Logo" 
+              className={`absolute h-10 w-auto object-contain bg-white p-1 rounded transition-all duration-300 ${isSidebarOpen ? 'opacity-0 scale-50 pointer-events-none' : 'opacity-100 scale-100'}`} 
+            />
+            {/* Logo Penuh */}
+            <img 
+              src="/logo.png" 
+              alt="Askrindo IFG" 
+              className={`h-10 w-auto object-contain bg-white p-1 rounded transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 w-0 pointer-events-none'}`} 
+            />
+          </div>
+          <span className={`font-bold text-sm leading-tight tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-300 whitespace-nowrap overflow-hidden ${isSidebarOpen ? 'ml-3 opacity-100 w-auto' : 'ml-0 opacity-0 w-0'}`}>
             Transformation<br/>Dashboard
           </span>
         </div>
